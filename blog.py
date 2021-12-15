@@ -5,6 +5,66 @@ import os
 import sys
 import subprocess
 
+def is_file_processable(path) -> bool:
+	try:
+		file = open(path)
+
+		# First line must be yaml metadata
+
+		line = file.readline()
+
+		if not "---" in line:
+			file.close()
+			print("WARN: Missing metadata. Skipping " + path + ".")
+			return False
+
+		public = False
+		
+		for line in file:
+			if "blog.py: true" in line:
+				public = True
+				continue
+
+			if "---" in line or "..." in line:
+				file.close()
+				return public
+
+		file.close()
+
+		# Couldn't find closing metadata line
+
+		print("WARN: Couldn't find end of metadata. " + path + ".")
+
+		return False
+	except OSError:
+		print("WARN: Unable to open " + path + ".")
+		return False
+
+def scan_directory(path, callback) -> list:
+	try:
+		dir = os.scandir(os.path.abspath(path))
+		entries = []
+
+		for entry in dir:
+			if entry.is_file():
+				if callback(entry):
+					entries.append(entry.path)
+			elif entry.is_dir() and args.recursive:
+				sub_entries = scan_directory(entry.path, callback)
+
+				if len(sub_entries) != 0:
+					entries += sub_entries
+		
+		dir.close()
+
+		return entries
+	except (OSError, PermissionError) as e:
+		print("WARN: Unable to access file system on " + path + ". " + e.strerror + ".")
+	except BaseException as e:
+		print("INFO: Unknown error while trying to access " + path + ".")
+		print("      Exception: ", end='')
+		print(e)
+
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-i', '--input', metavar='dir', type=str, required=True,
@@ -36,44 +96,49 @@ if __name__ == "__main__":
 
 	os.makedirs(os.path.abspath(args.output), exist_ok=True)
 
-	# Parse whitelist
-
-	whitelist = None
-
-	if args.whitelist:
-		try:
-			file = open(os.fsencode(args.whitelist))
-
-			for line in file:
-				# Ignore empty lines and comments
-
-				if len(line) == 1 or line[0] == '#':
-					continue
-
-				# Strip \n if it appears at the end
-
-				if line[-1] == '\n':
-					line = line[0:-1]
-
-				# Windows: Replace forward slashes with backward slashes
-
-				line = line.replace('/', os.sep)
-
-				if not whitelist:
-					whitelist = []
-
-				whitelist.append(line)
-
-			file.close()
-		except OSError:
-			print("WARN: Unable to open " + args.whitelist + ". Whitelist will be ignored.")
-
 	# Parse input directory
 
-	def scandir(path):
-		try:
-			dir = os.scandir(os.path.abspath(path))
-			entries = []
+	def _is_markdown_and_processable(entry):
+		_, extension = os.path.splitext(entry.path)
+
+		if extension.lower() == ".md" and is_file_processable(entry.path):
+			return True
+
+		return False
+
+	input_files = scan_directory(args.input, _is_markdown_and_processable)
+
+	# Create directories in output path
+
+	for file in input_files:
+		file = file.replace(os.path.abspath(args.input), os.path.abspath(args.output))
+
+		os.makedirs(os.path.dirname(file), exist_ok=True)
+	
+	# Process input files with pandoc
+
+	for file in input_files:
+		output_file = file.replace(os.path.abspath(args.input), os.path.abspath(args.output))
+		output_file, _ = os.path.splitext(output_file)
+		output_file += ".html"
+
+		pandoc = [
+			"pandoc",
+			file,
+			"--output=" + output_file,
+			"--from=markdown",
+			"--katex",
+			"--standalone",
+			"--table-of-contents",
+		]
+
+		if args.css:
+			pandoc.append("--css=" + args.css)
+		
+		if args.template:
+			pandoc.append("--template=" + args.template)
+		
+		subprocess.run(pandoc)
 
 			for entry in dir:
 				if entry.is_file():
