@@ -1,44 +1,73 @@
 #!/usr/bin/env python
 
+################################################################################
+# blog.py
+#
+# TODO:
+#   - Make title-prefix a command line argument.
+#   - Add "index (blog?)" option to make an aggregator of entries (which ones?).
+################################################################################
+
 import argparse
 import os
 import sys
 import subprocess
+import io
 
-def is_file_processable(path) -> bool:
+def parse_metadata(path: str) -> None | dict:
 	try:
-		file = open(path)
+		f = open(path)
 
-		# First line must be yaml metadata
+		# Check that file begins with metadata
 
-		line = file.readline()
+		line = f.readline()
 
 		if not "---" in line:
-			file.close()
-			print("WARN: Missing metadata. Skipping " + path + ".")
-			return False
+			f.close()
+			return None
 
-		public = False
-		
-		for line in file:
-			if "blog.py: true" in line:
-				public = True
+		# Parse metadata
+
+		parsing = False
+
+		metadata = {
+			"public": False,
+			"date": None,
+		}
+
+		for line in f:
+			if line.rstrip() == "blog.py:":
+				parsing = True
 				continue
 
-			if "---" in line or "..." in line:
-				file.close()
-				return public
+			if parsing:
+				# No more than two spaces for each item under blog.py
+				if line.count(" ", 0, 3) > 2:
+					print("WARN: Malformed metadata in file " + path + ".")
+					return None
 
-		file.close()
+				if ("public:" in line) and ("true" in line):
+					metadata["public"] = True
+				elif "date:" in line:
+					metadata["date"] = int(line.split(":")[1].strip())
+				elif not "---" in line:
+					print("WARN: Unknown metadata parameter " + line.split(":")[0].strip() + " in file " + path + ".")
+			
+			if "---" in line:
+				parsing = False
+				break
+		
+		f.close()
 
-		# Couldn't find closing metadata line
+		if parsing:
+			print("WARN: Cannot find end of metadata.")
+			return None
+		
+		return metadata
 
-		print("WARN: Couldn't find end of metadata. " + path + ".")
-
-		return False
 	except OSError:
 		print("WARN: Unable to open " + path + ".")
-		return False
+		return None
 
 def scan_directory(path, callback) -> list:
 	try:
@@ -96,15 +125,22 @@ if __name__ == "__main__":
 
 	# Parse input directory
 
-	def _is_markdown_and_processable(entry):
+	def _is_markdown_and_public(entry):
+		# Check that files have the .md extension and are public
+
 		_, extension = os.path.splitext(entry.path)
 
-		if extension.lower() == ".md" and is_file_processable(entry.path):
+		if extension.lower() != ".md":
+			return False
+		
+		metadata = parse_metadata(entry.path)
+
+		if metadata and metadata["public"]:
 			return True
 
 		return False
 
-	input_files = scan_directory(args.input, _is_markdown_and_processable)
+	input_files = scan_directory(args.input, _is_markdown_and_public)
 
 	# Create directories in output path
 
@@ -116,6 +152,8 @@ if __name__ == "__main__":
 	# Process input files with pandoc
 
 	for file in input_files:
+		print("INFO: Processing " + file + ".")
+
 		output_file = file.replace(os.path.abspath(args.input), os.path.abspath(args.output))
 		output_file, _ = os.path.splitext(output_file)
 		output_file += ".html"
@@ -128,6 +166,7 @@ if __name__ == "__main__":
 			"--katex",
 			"--standalone",
 			"--table-of-contents",
+			"--title-prefix=" + "blog.py",
 		]
 
 		if args.css:
