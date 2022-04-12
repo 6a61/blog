@@ -68,15 +68,13 @@ def scan_directory(path, callback) -> list:
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-i', '--input', metavar='dir', type=str, required=True,
-		help='Input directory')
+		help='input directory')
 	parser.add_argument('-o', '--output', metavar='dir', type=str, required=True,
-		help='Output directory')
+		help='output directory')
 	parser.add_argument('-t', '--template', metavar='file|url', type=str, required=False,
-		help='Specify custom template')
-	parser.add_argument('-w', '--whitelist', metavar='file', type=str, required=False,
-		help='Whitelist file')
+		help='specify custom template')
 	parser.add_argument('-r', '--recursive', action='store_true', required=False,
-		help='Recurse')
+		help='recurse')
 	parser.add_argument('--css', metavar='url', type=str, required=False,
 		help='CSS')
 
