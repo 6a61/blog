@@ -46,8 +46,8 @@ def parse_metadata(path: str) -> None | dict:
 					print("WARN: Malformed metadata in file " + path + ".")
 					return None
 
-				if ("public:" in line) and ("true" in line):
-					metadata["public"] = True
+				if "public:" in line:
+					metadata["public"] = "true" in line
 				elif "date:" in line:
 					metadata["date"] = int(line.split(":")[1].strip())
 				elif not "---" in line:
