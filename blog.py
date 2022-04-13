@@ -6,6 +6,9 @@
 # TODO:
 #   - Make title-prefix a command line argument.
 #   - Add "index (blog?)" option to make an aggregator of entries (which ones?).
+# CHANGELOG:
+#   2022-04-13
+#     - Improved command line parsing to accept pandoc options directly.
 ################################################################################
 
 import argparse
@@ -95,6 +98,18 @@ def scan_directory(path, callback) -> list:
 		print(e)
 
 if __name__ == "__main__":
+	# Parse command line arguments
+
+	args = " ".join(sys.argv).split(" -- ")
+	pandoc_args = list()
+
+	if len(args) == 2:
+		pandoc_args = args[1].split()
+		args = args[0].split()
+		args = args[1:len(args)]
+	else:
+		args = args[0].split()
+	
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-i', '--input', metavar='dir', type=str, required=True,
 		help='input directory')
@@ -104,14 +119,14 @@ if __name__ == "__main__":
 		help='specify custom template')
 	parser.add_argument('-r', '--recursive', action='store_true', required=False,
 		help='recurse')
-	parser.add_argument('--css', metavar='url', type=str, required=False,
-		help='CSS')
+
+	parser.usage = sys.argv[0] + " -i dir -o dir [options] [-- <pandoc options>]"
 
 	if len(sys.argv) == 1:
 		parser.print_help()
 		sys.exit()
 
-	args = parser.parse_args()
+	args = parser.parse_args(args)
 
 	# Check directories exists
 
@@ -169,10 +184,7 @@ if __name__ == "__main__":
 			"--title-prefix=" + "blog.py",
 		]
 
-		if args.css:
-			pandoc.append("--css=" + args.css)
-		
-		if args.template:
-			pandoc.append("--template=" + args.template)
-		
+		for arg in pandoc_args:
+			pandoc.append(arg)
+
 		subprocess.run(pandoc)
