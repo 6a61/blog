@@ -113,59 +113,55 @@ for file in input_files:
 
 	metadata = utils.get_metadata(file)
 
-	if metadata and ("blog.py" in metadata):
-		if "date" in metadata["blog.py"]:
-			date = time.localtime(metadata["blog.py"]["date"])
-			date = time.strftime(args.date, date)
-			pandoc.append("--var=date:" + date)
+	if "date" in metadata["blog.py"]:
+		date = time.localtime(metadata["blog.py"]["date"])
+		date = time.strftime(args.date, date)
+		pandoc.append("--var=date:" + date)
 
-		if ("index" in metadata["blog.py"]) and metadata["blog.py"]["index"]:
-			sorted_metadata = []
+	if ("index" in metadata["blog.py"]) and metadata["blog.py"]["index"]:
+		sorted_metadata = []
 
-			for f in input_files:
-				m = utils.get_metadata(f)
+		for f in input_files:
+			m = utils.get_metadata(f)
 
-				if (not "date" in m["blog.py"]) or (not "title" in m):
-					continue
+			if (not "date" in m["blog.py"]) or (not "title" in m):
+				continue
 
-				sorted_metadata.append((f, m))
+			sorted_metadata.append((f, m))
 
 
-			def _sort_metadata(item):
-				return item[1]["blog.py"]["date"]
+		def _sort_metadata(item):
+			return item[1]["blog.py"]["date"]
 
-			sorted_metadata.sort(key=_sort_metadata, reverse=True)
+		sorted_metadata.sort(key=_sort_metadata, reverse=True)
 
-			if os.path.exists(".metadata.yaml"):
-				os.remove(".metadata.yaml")
+		metafile = open(".metadata.yaml", "w")
+		metafile.write("index:\n")
 
-			metafile = open(".metadata.yaml", "x")
-			metafile.write("index:\n")
+		for (path, metadata) in sorted_metadata:
+			proc = subprocess.Popen(["pandoc"], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+			title = proc.communicate(metadata["title"].encode())[0].decode()
+			title = title.strip().removeprefix("<p>").removesuffix("</p>")
 
-			for (path, metadata) in sorted_metadata:
-				proc = subprocess.Popen(["pandoc"], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-				title = proc.communicate(metadata["title"].encode())[0].decode()
-				title = title.strip().removeprefix("<p>").removesuffix("</p>")
+			metafile.write("  - title: " + title + "\n")
 
-				metafile.write("  - title: " + title + "\n")
+			formatted_date = time.localtime(metadata["blog.py"]["date"])
+			formatted_date = time.strftime(args.date, formatted_date)
 
-				formatted_date = time.localtime(metadata["blog.py"]["date"])
-				formatted_date = time.strftime(args.date, formatted_date)
+			metafile.write("    date: " + formatted_date + "\n")
 
-				metafile.write("    date: " + formatted_date + "\n")
+			url = path.replace(os.path.abspath(args.input), "")
+			url, _ = os.path.splitext(url)
+			url += ".html"
+			url = url.replace(os.path.sep, "/")
+			url = url[1:len(url)]
 
-				url = path.replace(os.path.abspath(args.input), "")
-				url, _ = os.path.splitext(url)
-				url += ".html"
-				url = url.replace(os.path.sep, "/")
-				url = url[1:len(url)]
+			metafile.write("    url: " + url + "\n")
 
-				metafile.write("    url: " + url + "\n")
+		metafile.close()
+		pandoc.append("--metadata-file=.metadata.yaml")
 
-			metafile.close()
-			pandoc.append("--metadata-file=.metadata.yaml")
+subprocess.run(pandoc)
 
-	subprocess.run(pandoc)
-
-	if os.path.exists(".metadata.yaml"):
-		os.remove(".metadata.yaml")
+if os.path.exists(".metadata.yaml"):
+	os.remove(".metadata.yaml")
