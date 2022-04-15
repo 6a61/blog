@@ -28,6 +28,7 @@ if __name__ != "__main__":
 	print("Module \"" + __name__ + "\" should not be imported.")
 	sys.exit()
 
+
 # Parse command line arguments
 
 parser = argparse.ArgumentParser()
@@ -48,10 +49,15 @@ if len(sys.argv) == 1:
 	sys.exit()
 
 args, pandoc_args = parser.parse_known_args(sys.argv)
-pandoc_args = pandoc_args[1:len(pandoc_args)]
-args.date = args.date.strip("'")
 
-# Check directories exists
+# Remove first argument which should be the program's name
+pandoc_args = pandoc_args[1:len(pandoc_args)]
+
+# Strip apostrophes, which make date display dirty
+args.date = args.date.strip("'") 
+
+
+# Check if input directory exists
 
 if not os.path.exists(os.path.abspath(args.input)):
 	print("ERROR: Input directory does not exists")
@@ -63,11 +69,10 @@ if not os.path.exists(os.path.abspath(args.input)):
 os.makedirs(os.path.abspath(args.output), exist_ok=True)
 
 
-# Parse input directory
+# Parse input directory for valid files (ie. files that have the .md extension
+# and have the blog.py public parameter set to true)
 
 def _is_markdown_and_public(entry):
-	# Check that files have the .md extension and are public
-
 	_, extension = os.path.splitext(entry.path)
 
 	if extension.lower() != ".md":
@@ -75,10 +80,10 @@ def _is_markdown_and_public(entry):
 	
 	metadata = utils.get_metadata(entry.path)
 
-	if metadata and ("blog.py" in metadata) and ("public" in metadata["blog.py"]):
-		return metadata["blog.py"]["public"]
-
-	return False
+	if (not metadata) or (not "blog.py" in metadata) or (not "public" in metadata["blog.py"]):
+		return False
+	
+	return metadata["blog.py"]["public"]
 
 input_files = utils.scan_directory(args.input, _is_markdown_and_public, args.recursive)
 
@@ -161,7 +166,9 @@ for file in input_files:
 		metafile.close()
 		pandoc.append("--metadata-file=.metadata.yaml")
 
-subprocess.run(pandoc)
+	# Finally, call pandoc
+	subprocess.run(pandoc)
 
-if os.path.exists(".metadata.yaml"):
-	os.remove(".metadata.yaml")
+	# Cleanup
+	if os.path.exists(".metadata.yaml"):
+		os.remove(".metadata.yaml")
