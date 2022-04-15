@@ -4,6 +4,9 @@
 # blog.py
 #
 # CHANGELOG:
+#   2022-04-15
+#     - Improve command line parsing behaviour
+#     - Add date command line argument
 #   2022-04-13
 #     - Improved command line parsing to accept pandoc options directly.
 #     - Move metadata parsing function into utils.py
@@ -27,16 +30,6 @@ if __name__ != "__main__":
 
 # Parse command line arguments
 
-args = " ".join(sys.argv).split(" -- ")
-pandoc_args = list()
-
-if len(args) == 2:
-	pandoc_args = args[1].split()
-	args = args[0].split()
-	args = args[1:len(args)]
-else:
-	args = args[0].split()
-
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', metavar='dir', type=str, required=True,
 	help='input directory')
@@ -44,15 +37,19 @@ parser.add_argument('-o', '--output', metavar='dir', type=str, required=True,
 	help='output directory')
 parser.add_argument('-r', '--recursive', action='store_true', required=False,
 	help='recurse')
+parser.add_argument('-d', '--date', metavar='date', type=ascii, required=False,
+	help='date format (ex. %%Y-%%m-%%d)', default="%Y-%m-%d")
 
-parser.usage = sys.argv[0] + " -i dir -o dir [options] [-- <pandoc options>]"
+parser.usage = sys.argv[0] + " -i dir -o dir [options] [pandoc options]"
+parser.epilog = "Any option that's not on the list will be passed directly to pandoc"
 
 if len(sys.argv) == 1:
 	parser.print_help()
 	sys.exit()
 
-args = parser.parse_args(args)
-
+args, pandoc_args = parser.parse_known_args(sys.argv)
+pandoc_args = pandoc_args[1:len(pandoc_args)]
+args.date = args.date.strip("'")
 
 # Check directories exists
 
@@ -98,7 +95,6 @@ for file in input_files:
 
 for file in input_files:
 	print("INFO: Processing " + file + ".")
-	metadata = utils.get_metadata(file)
 
 	output_file = file.replace(os.path.abspath(args.input), os.path.abspath(args.output))
 	output_file, _ = os.path.splitext(output_file)
@@ -113,12 +109,14 @@ for file in input_files:
 		"--table-of-contents",
 	]
 
-	for arg in pandoc_args:
-		pandoc.append(arg)
+	pandoc += pandoc_args
+
+	metadata = utils.get_metadata(file)
 
 	if metadata and ("blog.py" in metadata):
 		if "date" in metadata["blog.py"]:
-			date = time.strftime("%Y-%m-%d", time.localtime(metadata["blog.py"]["date"]))
+			date = time.localtime(metadata["blog.py"]["date"])
+			date = time.strftime(args.date, date)
 			pandoc.append("--var=date:" + date)
 
 		if ("index" in metadata["blog.py"]) and metadata["blog.py"]["index"]:
@@ -138,25 +136,36 @@ for file in input_files:
 
 			sorted_metadata.sort(key=_sort_metadata, reverse=True)
 
-			index_path = shutil.copy(file, ".tmp_index.md")
-			index = open(index_path, "a")
-			index.write("\n\n")
+			if os.path.exists(".metadata.yaml"):
+				os.remove(".metadata.yaml")
+
+			metafile = open(".metadata.yaml", "x")
+			metafile.write("index:\n")
 
 			for (path, metadata) in sorted_metadata:
-				formatted_date = time.strftime("%Y-%m-%d", time.localtime(metadata["blog.py"]["date"]))
-				title = metadata["title"]
+				proc = subprocess.Popen(["pandoc"], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+				title = proc.communicate(metadata["title"].encode())[0].decode()
+				title = title.strip().removeprefix("<p>").removesuffix("</p>")
+
+				metafile.write("  - title: " + title + "\n")
+
+				formatted_date = time.localtime(metadata["blog.py"]["date"])
+				formatted_date = time.strftime(args.date, formatted_date)
+
+				metafile.write("    date: " + formatted_date + "\n")
+
 				url = path.replace(os.path.abspath(args.input), "")
 				url, _ = os.path.splitext(url)
 				url += ".html"
 				url = url.replace(os.path.sep, "/")
 				url = url[1:len(url)]
-				
-				index.write("- " + formatted_date + ": [" + title + "](" + url + ")\n")
 
-			index.close()
-			pandoc[1] = pandoc[1].replace(file, index_path)
+				metafile.write("    url: " + url + "\n")
+
+			metafile.close()
+			pandoc.append("--metadata-file=.metadata.yaml")
 
 	subprocess.run(pandoc)
 
-	if (pandoc[1] == ".tmp_index.md"):
-		os.remove(".tmp_index.md")
+	if os.path.exists(".metadata.yaml"):
+		os.remove(".metadata.yaml")
