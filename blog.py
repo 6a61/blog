@@ -38,8 +38,8 @@ parser.add_argument('-o', '--output', metavar='dir', type=str, required=True,
 	help='output directory')
 parser.add_argument('-r', '--recursive', action='store_true', required=False,
 	help='recurse')
-parser.add_argument('-d', '--date', metavar='date', type=ascii, required=False,
-	help='date format (ex. %%Y-%%m-%%d)', default="%Y-%m-%d")
+parser.add_argument('-d', '--date', metavar='\"format\"', type=ascii, required=False,
+	help='date format (ex. \"%%Y-%%m-%%d\")', default="%Y-%m-%d")
 
 parser.usage = sys.argv[0] + " -i dir -o dir [options] [pandoc options]"
 parser.epilog = "Any option that's not on the list will be passed directly to pandoc"
