@@ -109,9 +109,6 @@ for file in input_files:
 		"pandoc",
 		file,
 		"--output=" + output_file,
-		"--from=markdown",
-		"--standalone",
-		"--table-of-contents",
 	]
 
 	pandoc += pandoc_args
