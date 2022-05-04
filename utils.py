@@ -25,7 +25,7 @@ def get_metadata(path: str) -> None | dict:
 	if not "---" in line:
 		file.close()
 		return None
-	
+
 
 	# Scan metadata
 
@@ -37,7 +37,9 @@ def get_metadata(path: str) -> None | dict:
 	for line in file:
 		if line.count(" ", 0, 1) == 0:
 			if "title" == line.split(":")[0]:
-				metadata["title"] = line.split(":")[1].strip().strip("\"")
+				metadata["title"] = ":".join(line.split(":")[1:])
+				metadata["title"] = metadata["title"].strip()
+				metadata["title"] = metadata["title"].strip("\"")
 				continue
 
 			if "blog.py:" == line.rstrip():
@@ -65,7 +67,7 @@ def get_metadata(path: str) -> None | dict:
 			else:
 				metadata["blog.py"][key] = value
 
-	
+
 	file.close()
 
 	if not found_closing_line:
@@ -90,7 +92,7 @@ def scan_directory(path, callback, recurse=False) -> list:
 
 				if len(sub_entries) != 0:
 					entries += sub_entries
-		
+
 		dir.close()
 
 		return entries

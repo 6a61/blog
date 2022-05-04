@@ -54,7 +54,7 @@ args, pandoc_args = parser.parse_known_args(sys.argv)
 pandoc_args = pandoc_args[1:len(pandoc_args)]
 
 # Strip apostrophes, which make date display dirty
-args.date = args.date.strip("'") 
+args.date = args.date.strip("'")
 
 
 # Check if input directory exists
@@ -77,12 +77,12 @@ def _is_markdown_and_public(entry):
 
 	if extension.lower() != ".md":
 		return False
-	
+
 	metadata = utils.get_metadata(entry.path)
 
 	if (not metadata) or (not "blog.py" in metadata) or (not "public" in metadata["blog.py"]):
 		return False
-	
+
 	return metadata["blog.py"]["public"]
 
 input_files = utils.scan_directory(args.input, _is_markdown_and_public, args.recursive)
@@ -144,6 +144,7 @@ for file in input_files:
 			proc = subprocess.Popen(["pandoc"], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 			title = proc.communicate(metadata["title"].encode())[0].decode()
 			title = title.strip().removeprefix("<p>").removesuffix("</p>")
+			title = "\"" + title + "\""
 
 			metafile.write("  - title: " + title + "\n")
 
