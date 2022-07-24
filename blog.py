@@ -4,6 +4,8 @@
 # blog.py
 #
 # CHANGELOG:
+#   2022-07-24
+#     - Fix index metadata encoding issue
 #   2022-04-15
 #     - Improve command line parsing behaviour
 #     - Add date command line argument
@@ -139,7 +141,7 @@ for file in input_files:
 
 		sorted_metadata.sort(key=_sort_metadata, reverse=True)
 
-		metafile = open(".metadata.yaml", "w")
+		metafile = open(".metadata.yaml", "w", encoding="utf-8")
 		metafile.write("index:\n")
 
 		for (path, metadata) in sorted_metadata:
