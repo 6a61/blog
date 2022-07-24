@@ -28,20 +28,21 @@ if __name__ != "__main__":
 	print("Module \"" + __name__ + "\" should not be imported.")
 	sys.exit()
 
-
+#-------------------------------------------------------------------------------
 # Parse command line arguments
+#-------------------------------------------------------------------------------
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--input', metavar='dir', type=str, required=True,
+parser.add_argument('-i', '--input', metavar='<input directory>', type=str, required=True,
 	help='input directory')
-parser.add_argument('-o', '--output', metavar='dir', type=str, required=True,
+parser.add_argument('-o', '--output', metavar='<output directory>', type=str, required=True,
 	help='output directory')
 parser.add_argument('-r', '--recursive', action='store_true', required=False,
 	help='recurse')
 parser.add_argument('-d', '--date', metavar='\"format\"', type=ascii, required=False,
 	help='date format (ex. \"%%Y-%%m-%%d\")', default="%Y-%m-%d")
 
-parser.usage = sys.argv[0] + " -i dir -o dir [options] [pandoc options]"
+parser.usage = sys.argv[0] + " [options] [pandoc options] -i <input directory> -o <output directory>"
 parser.epilog = "Any option that's not on the list will be passed directly to pandoc"
 
 if len(sys.argv) == 1:
@@ -56,18 +57,16 @@ pandoc_args = pandoc_args[1:len(pandoc_args)]
 # Strip apostrophes, which make date display dirty
 args.date = args.date.strip("'")
 
-
-# Check if input directory exists
+#-------------------------------------------------------------------------------
+# Check if directories exist and create output directory structure
+#-------------------------------------------------------------------------------
 
 if not os.path.exists(os.path.abspath(args.input)):
-	print("ERROR: Input directory does not exists")
+	print("ERROR: Input directory does not exist")
 	sys.exit()
 
-
-# Create output directory if it does not exist
-
+# Create output directory if it does not
 os.makedirs(os.path.abspath(args.output), exist_ok=True)
-
 
 # Parse input directory for valid files (ie. files that have the .md extension
 # and have the blog.py public parameter set to true)
@@ -87,16 +86,14 @@ def _is_markdown_and_public(entry):
 
 input_files = utils.scan_directory(args.input, _is_markdown_and_public, args.recursive)
 
-
 # Create directories in output path
-
 for file in input_files:
 	file = file.replace(os.path.abspath(args.input), os.path.abspath(args.output))
-
 	os.makedirs(os.path.dirname(file), exist_ok=True)
 
-
+#-------------------------------------------------------------------------------
 # Process input files with pandoc
+#-------------------------------------------------------------------------------
 
 for file in input_files:
 	print("INFO: Processing " + file + ".")
@@ -119,6 +116,11 @@ for file in input_files:
 		date = time.localtime(metadata["blog.py"]["date"])
 		date = time.strftime(args.date, date)
 		pandoc.append("--var=date:" + date)
+
+	# Add "index" metadata to file that has the index field set to true. It can
+	# then be accessed from the template by checking and iterating the index
+	# variable. For example, $for(index)$. Read the pandoc documentation for
+	# more info on templates.
 
 	if ("index" in metadata["blog.py"]) and metadata["blog.py"]["index"]:
 		sorted_metadata = []
