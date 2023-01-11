@@ -1,0 +1,11 @@
+# Directories
+
+.vscode/
+out/
+__pycache__/
+
+# Files
+
+*.bat
+*.css
+*.html
