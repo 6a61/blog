@@ -4,6 +4,8 @@
 # blog.py
 #
 # CHANGELOG:
+#   2023-01-11
+#     - Open files as UTF-8 to avoid exception when parsing
 #   2022-07-24
 #     - Fix index metadata encoding issue
 #   2022-04-15

@@ -7,7 +7,6 @@ def get_metadata(path: str) -> None | dict:
 		print("WARN: Unable to find file at " + path)
 		return None
 
-
 	# Check if we already have the metadata in cache or initialize with None
 
 	if path in _metadata_cache:
@@ -15,17 +14,15 @@ def get_metadata(path: str) -> None | dict:
 	else:
 		_metadata_cache[path] = None
 
-
 	# Check that the first line is a YAML block delimiter
 
-	file = open(path)
+	file = open(path, encoding='utf-8')
 
 	line = file.readline()
 
 	if not "---" in line:
 		file.close()
 		return None
-
 
 	# Scan metadata
 
@@ -67,7 +64,6 @@ def get_metadata(path: str) -> None | dict:
 			else:
 				metadata["blog.py"][key] = value
 
-
 	file.close()
 
 	if not found_closing_line:
@@ -87,11 +83,14 @@ def scan_directory(path, callback, recurse=False) -> list:
 			if entry.is_file():
 				if callback(entry):
 					entries.append(entry.path)
-			elif entry.is_dir() and recurse:
-				sub_entries = scan_directory(entry.path, callback, recurse)
+			elif entry.is_dir():
+				if recurse:
+					sub_entries = scan_directory(entry.path, callback, recurse)
 
-				if len(sub_entries) != 0:
-					entries += sub_entries
+					if len(sub_entries) != 0:
+						entries += sub_entries
+			else:
+				print("WARN: Unknown file type " + path)
 
 		dir.close()
 
