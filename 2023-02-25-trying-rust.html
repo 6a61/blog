@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+	<title>// TODO - Trying out Rust and SDL2</title>
+	<link rel="stylesheet" href="/blog/style.css">
+	<style>pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */</style>
+</head>
+
+<body>
+	<header>
+		<a href="/"><h1>// TODO:</h1></a>
+	</header>
+
+	<h1 id="title">Trying out Rust and SDL2</h1>
+	<h2 id="date">2023, February 25</h2>
+
+	<article>
+
+
+<p>I’ve finally decided to give Rust a try. I’ve been working on a
+framework in C++ that uses SDL2 for handling windows and events. It’s
+pretty much the heart of the project so I thought it was a good idea to
+try and port it to Rust and see how much I like it.</p>
+<p>At first I evaluated using <a
+href="https://crates.io/crates/sdl2">Rust-SDL2</a> but my framework
+doesn’t only use SDL2 but also some other libraries which may not have
+bindings readily available. Since I know the SDL2 API quite well, I
+decided to, at least intially, write the bindings by hand. I’ll probably
+fall back to <a
+href="https://rust-lang.github.io/rust-bindgen/">bindgen</a> later on,
+but I wanted to take the long road first.</p>
+<p>So I created a Rust project with Cargo and added a
+<code>src/bindings/csdl2.rs</code> file, which will hold the C bindings.
+The first function I tackled was the <code>SDL_CreateWindow</code>
+function. The C prototype is like follows</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>SDL_Window<span class="op">*</span> SDL_CreateWindow<span class="op">(</span><span class="dt">const</span> <span class="dt">char</span><span class="op">*</span> title<span class="op">,</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>                             <span class="dt">int</span> x<span class="op">,</span> <span class="dt">int</span> y<span class="op">,</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>                             <span class="dt">int</span> w<span class="op">,</span> <span class="dt">int</span> h<span class="op">,</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>                             Uint32 flags<span class="op">);</span></span></code></pre></div>
+<p>To translate it into Rust it’s surprisingly easy. Rust provides some
+special types that interact nicely with the C types in the
+<code>std::ffi</code> module. Let’s see how it becomes</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode rs"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">std::ffi::</span><span class="op">{</span><span class="dt">c_char</span><span class="op">,</span> <span class="dt">c_int</span><span class="op">,</span> <span class="dt">c_void</span><span class="op">};</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">extern</span> <span class="st">&quot;C&quot;</span> <span class="op">{</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> SDL_CreateWindow(title<span class="op">:</span> <span class="op">*</span><span class="kw">const</span> <span class="dt">c_char</span><span class="op">,</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>                            x<span class="op">:</span> <span class="dt">c_int</span><span class="op">,</span> y<span class="op">:</span> <span class="dt">c_int</span><span class="op">,</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>                            w<span class="op">:</span> <span class="dt">c_int</span><span class="op">,</span> h<span class="op">:</span> <span class="dt">c_int</span><span class="op">,</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>                            flags<span class="op">:</span> <span class="dt">u32</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    ) <span class="op">-&gt;</span> <span class="op">*</span><span class="kw">mut</span> <span class="dt">c_void</span><span class="op">;</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>There are two exceptional things in how I wrote it. The first case
+was with the <code>flags</code> parameter, but Rust provides a native
+<code>u32</code> type that can be used, so no issues so far. The second
+with the return value. The <code>SDL_Window</code> struct is <a
+href="https://en.wikipedia.org/wiki/Opaque_data_type">opaque data
+type</a> so I decided to pass a generic <code>void</code> pointer
+instead.</p>
+<p>Alright, so the <code>SDL_CreateWindow</code> function is now in the
+<code>crate::bindings::csdl2</code> module. However, we still have to
+tell the compiler where the actual function of the SDL2 library is
+located. To do that, we make a <code>build.rs</code> in the project’s
+root directory and tell Cargo that we need to link against our system’s
+SDL2 library. Here’s how it’s done</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode rs"><code class="sourceCode rust"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> main() <span class="op">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="pp">println!</span>(<span class="st">&quot;cargo:rustc-link-library=SDL2&quot;</span>)<span class="op">;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>There are other parameters that can be set, like a specific directory
+in which to look for the library, but the above example was good enough
+for my system.</p>
+<p>With all that set, we can now call the <code>SDL_CreateWindow</code>
+function from Rust. Here’s an example</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode rs"><code class="sourceCode rust"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="kw">crate</span><span class="pp">::bindings::</span>csdl2<span class="op">;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">std::time::</span>Duration<span class="op">;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">/* snip */</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> title <span class="op">=</span> <span class="pp">CString::</span>new(<span class="st">&quot;My window&quot;</span>)<span class="op">.</span>unwrap()<span class="op">;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> x <span class="op">=</span> <span class="dv">100</span><span class="op">;</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> y <span class="op">=</span> <span class="dv">100</span><span class="op">;</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> w <span class="op">=</span> <span class="dv">640</span><span class="op">;</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> h <span class="op">=</span> <span class="dv">480</span><span class="op">;</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> sdl_window <span class="op">=</span> <span class="kw">unsafe</span> <span class="op">{</span> <span class="pp">csdl2::</span>SDL_CreateWindow(title<span class="op">.</span>into_raw()<span class="op">,</span> x<span class="op">,</span> y<span class="op">,</span> w<span class="op">,</span> h<span class="op">,</span> <span class="dv">0</span>) <span class="op">};</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> sdl_window<span class="op">.</span>is_null() <span class="op">{</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="pp">panic!</span>(<span class="st">&quot;Unable to create SDL window&quot;</span>)<span class="op">;</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="co">// Sleep some seconds to actually see the window</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="pp">std::thread::</span>sleep(<span class="pp">Duration::</span>new(<span class="dv">3</span><span class="op">,</span> <span class="dv">0</span>))<span class="op">;</span></span></code></pre></div>
+<p>And that’s it. It wasn’t that painful. The only tedious work is
+writing all the bindings, but that happens in every language that isn’t
+C or C++. Which is why I’d like to try the bindgen approach for my next
+experiment. Right now, I don’t think I’ll adopt Rust for this framework
+as it depends too much on the C/C++ ecosystem. However, as more and more
+bindings become available I can see Rust becoming more appealing for my
+future projects. The Cargo package manager is a really nice tool to have
+and I can only wish that C/C++ had something like that (I’ve been using
+<a href="https://vcpkg.io">vcpkg</a>, but it’s still different!).</p>
+<p>There are still some things that I wanted to write about, like
+<code>enums</code> and <code>struct</code>s, but I ran out of time and I
+really want to get this post out of my system so I can work on other
+things and procrastinate on others.</p>
+<p>I’m out. Have a nice day.</p>
+	</article>
+
+
+	<div class="spacer"></div>
+
+	<footer>
+		<div id="footer-year">© MMXXII-MMXXIII</div>
+	</footer>
+</body>
+</html>
