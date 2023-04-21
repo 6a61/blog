@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+	<title>// TODO - Pokémon Red ROM Viewer</title>
+	<link rel="stylesheet" href="/blog/style.css">
+</head>
+
+<body>
+	<header>
+		<a href="/blog"><h1>// TODO:</h1></a>
+	</header>
+
+	<h1 id="title">Pokémon Red ROM Viewer</h1>
+	<h2 id="date">2023, April 22</h2>
+
+	<article>
+
+
+<p>I’ve been working on reverse engineering Pokémon Red and I’ve gotten
+quite far! A lot of time went into it but also a lot of help. A big
+shout-out to <a href="https://github.com/pret">pret</a> and their
+dissassembly which was a great resource when it came to pin-pointing
+where certain assets dwell in the ROM. I’m staying far away from how the
+game actually works because… well, that’s for the future and a future
+project, most likely!</p>
+<figure>
+<img src="images/red-rom-viewer.png" alt="Red ROM Viewer" />
+<figcaption aria-hidden="true">Red ROM Viewer</figcaption>
+</figure>
+<p>One of my favorite parts was getting extracting the tilesets the game
+uses and then rendering the whole map of the game. It wasn’t extremely
+difficult and it was easy to see the fruits of my work.</p>
+<p>The most difficult part was extracting the creatures’ sprites. They
+are highly compressed (relatively speaking) and so they were quite
+annoying to get right. But at the end of the day it was nothing that a
+stubborn programmer couldn’t solve.</p>
+<p>Right now, pretty much the whole graphics of the ROM can be
+visualized. Some things can’t be easily visualized (again, due to
+compression) but the data is there to be ordered, I just need to work on
+it. One such example is the Gengar in the intro of the game.</p>
+<figure>
+<img src="images/red-rom-viewer-gengar.png" alt="Scrambled Gengar" />
+<figcaption aria-hidden="true">Scrambled Gengar</figcaption>
+</figure>
+<p>On the programming side, the project was made using C++ and CMake for
+building. As usual, my stack consists of SDL2, OpenGL and dear-imgui,
+since I’m leveraging the knowledge acquired when working on my
+<em>Pistacchio</em> framework.</p>
+<p>Between the things that I’d like to tackle in the future, one is the
+audio. Once I locate where it resides I’d have to work on an interpreter
+or find a way to transform it in a modern audio format! Finding out how
+the Game Boy did sound seems like an interesting project.</p>
+<p>I’d also like to release the whole thing as an open-source project,
+however I need to despaghettify the code and reorganize the files and
+I’m quite lazy…</p>
+<p>Also, music! <a
+href="https://www.youtube.com/watch?v=2aECMeYd8RM">Dreamcatcher by
+Vanilla</a> accompanied me while writing this post.</p>
+	</article>
+
+
+	<div class="spacer"></div>
+
+	<footer>
+		<div id="footer-year">© MMXXII-MMXXIII</div>
+	</footer>
+</body>
+</html>
