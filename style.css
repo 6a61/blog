@@ -185,8 +185,17 @@ footer #footer-year {
 	cursor: help;
 }
 
+figure {
+	text-align: center;
+}
+
 figure > img {
-	width: 100%;
+	max-width: 100%;
+}
+
+figure > figcaption {
+	font-size: 14px;
+	text-align: center;
 }
 
 .index .entry {
