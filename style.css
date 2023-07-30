@@ -26,8 +26,8 @@ body {
 	line-height: 1.5;
 	font-size: 16px;
 	padding: 0 32px;
-	background-color: #fff;
-	color: #000;
+	background-color: #fafafa;
+	color: #111;
 	display: flex;
 	flex-flow: column;
 }
@@ -181,9 +181,11 @@ footer {
 	user-select: none;
 }
 
+/*
 footer #footer-year {
 	cursor: help;
 }
+*/
 
 figure {
 	text-align: center;
@@ -207,7 +209,7 @@ figure > figcaption {
 }
 
 .index .entry .date {
-	color: #000;
+	color: #111;
 }
 
 .spacer {
