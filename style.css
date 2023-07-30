@@ -24,7 +24,7 @@ h1, h2, h3, h4, h5, h6 {
 
 body {
 	margin: 0 auto;
-	font-family: monospace;
+	font-family: MS Gothic, monospace;
 	max-width: 1024px; /* 794px = A4 (21cm) @ 96dpi */
 	line-height: 1.5;
 	font-size: 12px;
